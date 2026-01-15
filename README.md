@@ -1,2 +1,378 @@
-# MegaStoreX
+[DEFINITIVA.html](https://github.com/user-attachments/files/24630638/DEFINITIVA.html)# MegaStoreX[Uploadin<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Tienda Online PRO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --bg:#f3f4f6; --card:#ffffff; --text:#111827; --primary:#4f46e5; --danger:#dc2626;
+}
+.dark{
+  --bg:#0f172a; --card:#1e293b; --text:#e5e7eb;
+}
+
+*{box-sizing:border-box}
+body{ margin:0; font-family:Arial,sans-serif; background:var(--bg); color:var(--text); }
+
+/* BARRA DE TEXTO */
+#ticker-container { background: var(--primary); color: white; overflow: hidden; white-space: nowrap; padding: 5px 0; }
+#ticker-text { display: inline-block; padding-left: 100%; animation: marquee var(--t-speed, 15s) linear infinite; font-size: var(--t-size, 16px); }
+@keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+
+/* HEADER */
+header{ background:var(--card); display:flex; align-items:center; padding:10px; gap:10px; box-shadow:0 4px 10px rgba(0,0,0,.1); position: sticky; top:0; z-index: 900;}
+header img{ height:45px; border-radius: 5px; object-fit: contain; max-width: 100px; }
+header h1{ flex:1; margin:0; text-align:center; font-size: 1.2rem; }
+
+/* MENÚ IZQUIERDO */
+#overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 998; }
+#overlay.active { display: block; }
+#menu{ position:fixed; left:-280px; top:0; width:260px; height:100%; background:var(--card); padding:15px; transition:.3s; z-index: 999; }
+#menu.active{left:0}
+#menu div{padding:10px; cursor:pointer; border-radius:6px; margin-bottom: 5px; transition: 0.2s;}
+#menu div.active-cat { background: var(--primary); color: white; font-weight: bold; }
+
+/* PRODUCTOS (4 POR COLUMNA) */
+#productos{ padding:20px; display:grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+@media (max-width: 1024px) { #productos { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { #productos { grid-template-columns: 1fr; } }
+
+.card{
+  background:var(--card); padding:15px; border-radius:15px; box-shadow:0 6px 15px rgba(0,0,0,.1);
+  text-align:center; display: flex; flex-direction: column; justify-content: space-between;
+}
+.card img{ width:100%; height:180px; object-fit:cover; border-radius:10px; margin-bottom: 10px; }
+
+/* BOTONES */
+button{ border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight: bold; }
+.primary{background:var(--primary);color:white}
+.danger{background:var(--danger);color:white}
+.edit{background:#f59e0b; color:white}
+.btn-x{ background: #eee; color: #555; padding: 2px 8px; font-size: 12px; margin-left: 5px;}
+
+/* CARRITO */
+#carrito{
+  position:fixed; right:15px; bottom:15px; background:var(--card); width:340px;
+  max-height:85vh; overflow:auto; display:none; padding:15px; border-radius:15px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.4); z-index: 1000;
+}
+
+/* --- MODO ADMIN FLOTANTE (MODAL) --- */
+.modal-admin {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%; max-width: 700px;
+  max-height: 90vh;
+  background: var(--card);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  z-index: 2000;
+  padding: 25px;
+  overflow-y: auto;
+  display: none; /* Se activa por JS */
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; margin-bottom: 15px; padding-bottom: 10px; }
+.admin-box { background: rgba(0,0,0,0.03); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.05); }
+
+/* TABLAS ADMIN */
+table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; background: white;}
+.dark table { color: #333; }
+table td, table th { border: 1px solid #ddd; padding: 5px; }
+
+input, select, textarea { width: 100%; margin: 5px 0; padding: 10px; border-radius: 5px; border: 1px solid #ccc; background: var(--bg); color: var(--text); }
+</style>
+</head>
+
+<body>
+
+<div id="ticker-container">
+    <div id="ticker-text">¡Bienvenidos!</div>
+</div>
+
+<div id="overlay" onclick="closeAllModals()"></div>
+
+<header>
+  <span style="font-size:30px; cursor:pointer" onclick="toggleMenu()">☰</span>
+  <img id="logo" src="" alt="Logo">
+  <h1 id="storeName">Cargando...</h1>
+  <button onclick="toggleTheme()">🌙</button>
+  <button onclick="toggleCarrito()">🛒</button>
+  <button onclick="openLogin()">🔒</button>
+</header>
+
+<div id="menu">
+    <div style="text-align:right; font-weight:bold; color:red; cursor:pointer" onclick="toggleMenu()">CERRAR ✖</div>
+    <div id="menuContent"></div>
+</div>
+
+<div id="productos"></div>
+
+<div id="carrito">
+  <h3 style="margin:0">🛒 Tu Pedido</h3>
+  <div id="cartItems"></div>
+  <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px">
+      <input id="uName" placeholder="Tu Nombre">
+      <input id="uPhone" type="tel" placeholder="Tu Teléfono">
+      <textarea id="uAddress" placeholder="Dirección exacta" rows="2"></textarea>
+      <select id="zona" onchange="updateTotal()">
+        <option value="">Seleccionar Zona</option>
+        <option value="quito">Quito (+ $2.00)</option>
+        <option value="fuera">Fuera de Quito (+ $6.00)</option>
+      </select>
+      <div id="serviNote" style="color:#2563eb; font-size:0.8rem; display:none; margin:5px 0">🚚 Envío por Servientrega</div>
+  </div>
+  <h3>Total: $<span id="total">0.00</span></h3>
+  <button class="primary" style="width:100%; padding:12px" onclick="checkout()">ENVIAR PEDIDO</button>
+  <button onclick="toggleCarrito()" style="width:100%; margin-top:5px">Cerrar</button>
+</div>
+
+<div id="login" class="modal-admin">
+  <div class="modal-header">
+    <h3>Acceso Administrador</h3>
+    <button class="danger" onclick="closeAllModals()">✖</button>
+  </div>
+  <input id="pass" type="password" placeholder="Contraseña">
+  <button class="primary" style="width:100%" onclick="loginAdmin()">Entrar</button>
+</div>
+
+<div id="admin" class="modal-admin">
+  <div class="modal-header">
+    <h2>Panel de Control</h2>
+    <button class="danger" onclick="closeAllModals()">CERRAR ✖</button>
+  </div>
+  
+  <div class="admin-box">
+    <h3>1. Configuración de Marca</h3>
+    <input id="storeNameInput" placeholder="Nombre de la Tienda">
+    <button class="primary" onclick="saveStoreName()">Guardar Nombre</button>
+    <p style="margin-top:10px">Logo Empresa:</p>
+    <input type="file" id="logoInput" accept="image/*">
+  </div>
+
+  <div class="admin-box">
+      <h3>2. Barra de Anuncios</h3>
+      <input id="tMsg" placeholder="Mensaje">
+      Velocidad: <input id="tSpd" type="number" style="width:60px"> Tamaño: <input id="tSiz" type="number" style="width:60px">
+      <button class="primary" onclick="saveTicker()">Actualizar</button>
+  </div>
+
+  <div class="admin-box">
+    <h3>3. Categorías</h3>
+    <input id="catName" placeholder="Nueva Categoría">
+    <input id="subName" placeholder="Subcategorías (coma)">
+    <button class="primary" id="btnCat" onclick="addCategory()">Guardar</button>
+    <div id="adminCats"></div>
+  </div>
+
+  <div class="admin-box">
+    <h3>4. Productos</h3>
+    <input id="pName" placeholder="Nombre Producto">
+    <textarea id="pDesc" placeholder="Descripción"></textarea>
+    <input id="pPrice" type="number" placeholder="Precio">
+    <select id="pCat" onchange="loadSubs()"></select>
+    <select id="pSub"></select>
+    <input id="pImg" type="file">
+    <button class="primary" id="btnProd" onclick="saveProduct()">Publicar</button>
+    <div id="adminProds"></div>
+  </div>
+
+  <button class="danger" style="width:100%" onclick="logout()">Cerrar Sesión</button>
+</div>
+
+<script>
+const ADMIN_PASS = "Leo072227.";
+const WHATS = "593978772247"; 
+
+let categories = JSON.parse(localStorage.getItem("cats")) || [];
+let products = JSON.parse(localStorage.getItem("prods")) || [];
+let cart = JSON.parse(localStorage.getItem("cart")) || {};
+let dark = JSON.parse(localStorage.getItem("dark")) || false;
+let tickerCfg = JSON.parse(localStorage.getItem("ticker")) || {msg: "¡Bienvenidos!", speed: 15, size: 16};
+let storeName = localStorage.getItem("storeName") || "Mi Tienda Online";
+
+let editIdx = -1, editCatIdx = -1;
+
+/* VENTANAS MODALES */
+function openLogin(){ 
+    document.getElementById("overlay").style.display = "block";
+    document.getElementById("login").style.display = "block";
+}
+function loginAdmin(){
+    if(document.getElementById("pass").value === ADMIN_PASS){
+        document.getElementById("login").style.display = "none";
+        document.getElementById("admin").style.display = "block";
+    } else { alert("Contraseña incorrecta"); }
+}
+function closeAllModals(){
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("login").style.display = "none";
+    document.getElementById("admin").style.display = "none";
+    document.getElementById("menu").classList.remove("active");
+}
+function logout(){ closeAllModals(); }
+
+/* INICIALIZACIÓN */
+function initStore(){
+    document.getElementById("storeName").innerText = storeName;
+    document.getElementById("storeNameInput").value = storeName;
+    applyTicker(); renderMenu(); renderProducts(); updateTotal();
+    document.body.classList.toggle("dark", dark);
+}
+
+function saveStoreName(){
+    storeName = document.getElementById("storeNameInput").value;
+    localStorage.setItem("storeName", storeName);
+    document.getElementById("storeName").innerText = storeName;
+    alert("Nombre actualizado");
+}
+
+/* LOGO */
+const logoImg = document.getElementById("logo");
+if(localStorage.getItem("logo")) logoImg.src = localStorage.getItem("logo");
+document.getElementById("logoInput").onchange = e => {
+  const r = new FileReader();
+  r.onload = ev => { localStorage.setItem("logo", ev.target.result); logoImg.src = ev.target.result; }
+  r.readAsDataURL(e.target.files[0]);
+};
+
+/* TICKER */
+function saveTicker(){
+    tickerCfg = { msg: tMsg.value, speed: tSpd.value, size: tSiz.value };
+    localStorage.setItem("ticker", JSON.stringify(tickerCfg));
+    applyTicker();
+}
+function applyTicker(){
+    const el = document.getElementById("ticker-text");
+    el.innerText = tickerCfg.msg;
+    document.documentElement.style.setProperty('--t-speed', tickerCfg.speed + 's');
+    document.documentElement.style.setProperty('--t-size', tickerCfg.size + 'px');
+}
+
+/* TIENDA LOGICA */
+function toggleMenu(){ 
+    let m = document.getElementById("menu");
+    m.classList.toggle("active");
+    document.getElementById("overlay").style.display = m.classList.contains("active") ? "block" : "none";
+}
+
+function renderMenu(activeCat = "Todo"){
+  let content = document.getElementById("menuContent");
+  content.innerHTML = "<h3>Categorías</h3>";
+  let btnTodo = document.createElement("div");
+  btnTodo.innerText = "Ver Todo";
+  if(activeCat === "Todo") btnTodo.className = "active-cat";
+  btnTodo.onclick = () => { renderProducts(); renderMenu("Todo"); toggleMenu(); };
+  content.appendChild(btnTodo);
+
+  pCat.innerHTML = "";
+  let htmlAdmin = "<table><tr><th>Nombre</th><th>Acciones</th></tr>";
+  categories.forEach((c, i) => {
+    let btnCat = document.createElement("div");
+    btnCat.innerText = c.name;
+    if(activeCat === c.name) btnCat.className = "active-cat";
+    btnCat.onclick = () => { filter(c.name); renderMenu(c.name); };
+    content.appendChild(btnCat);
+    pCat.innerHTML += `<option value="${i}">${c.name}</option>`;
+    htmlAdmin += `<tr><td>${c.name}</td><td><button class="edit" onclick="setupEditCat(${i})">✏️</button> <button class="danger" onclick="deleteCat(${i})">🗑️</button></td></tr>`;
+  });
+  adminCats.innerHTML = htmlAdmin + "</table>";
+  loadSubs();
+}
+
+function addCategory(){
+  const newCat = { name: catName.value, subs: subName.value.split(",") };
+  if(editCatIdx > -1) categories[editCatIdx] = newCat; else categories.push(newCat);
+  editCatIdx = -1; btnCat.innerText = "Guardar"; catName.value = ""; subName.value = "";
+  saveAll();
+}
+
+function saveProduct(){
+  const file = pImg.files[0];
+  const process = (imgB64) => {
+    const p = {
+      name: pName.value, desc: pDesc.value, price: parseFloat(pPrice.value),
+      img: imgB64 || (editIdx > -1 ? products[editIdx].img : ""),
+      cat: pCat.value, sub: pSub.value
+    };
+    if(editIdx > -1) products[editIdx] = p; else products.push(p);
+    editIdx = -1; btnProd.innerText = "Publicar"; pName.value=""; pDesc.value=""; pPrice.value=""; pImg.value="";
+    saveAll();
+  }
+  if(file){ const r = new FileReader(); r.onload = e => process(e.target.result); r.readAsDataURL(file); } else process();
+}
+
+function renderProducts(list = products){
+  let container = document.getElementById("productos");
+  container.innerHTML = "";
+  let htmlAdmin = "<table><tr><th>Img</th><th>Nombre</th><th>Acciones</th></tr>";
+  list.forEach((p, i) => {
+    container.innerHTML += `
+    <div class="card">
+      <img src="${p.img}">
+      <h3>${p.name}</h3>
+      <p style="font-size:0.8rem; height:35px; overflow:hidden">${p.desc}</p>
+      <b style="color:var(--primary)">$${p.price.toFixed(2)}</b>
+      <div style="margin:10px 0"><input type="number" id="qty-${i}" value="1" min="1" style="width:50px"></div>
+      <button class="primary" onclick="addCart(${i})">Agregar</button>
+    </div>`;
+  });
+  products.forEach((p, i) => {
+    htmlAdmin += `<tr><td><img src="${p.img}" width="30"></td><td>${p.name}</td><td><button class="edit" onclick="setupEditProd(${i})">✏️</button><button class="danger" onclick="deleteProd(${i})">🗑️</button></td></tr>`;
+  });
+  adminProds.innerHTML = htmlAdmin + "</table>";
+}
+
+function addCart(i){
+    const cantidad = parseInt(document.getElementById(`qty-${i}`).value) || 1;
+    cart[i] = (cart[i] || 0) + cantidad;
+    localStorage.setItem("cart", JSON.stringify(cart)); updateTotal();
+}
+
+/* FUNCIONES VARIAS */
+function setupEditCat(i){ editCatIdx = i; catName.value = categories[i].name; subName.value = categories[i].subs.join(","); btnCat.innerText = "Actualizar"; }
+function deleteCat(i){ if(confirm("¿Eliminar?")) { categories.splice(i,1); saveAll(); } }
+function loadSubs(){ pSub.innerHTML = ""; if(categories[pCat.value]) categories[pCat.value].subs.forEach(s => pSub.innerHTML += `<option>${s.trim()}</option>`); }
+function setupEditProd(i){ editIdx = i; const p = products[i]; pName.value = p.name; pDesc.value = p.desc; pPrice.value = p.price; pCat.value = p.cat; loadSubs(); pSub.value = p.sub; btnProd.innerText = "Actualizar"; }
+function deleteProd(i){ if(confirm("¿Eliminar?")) { products.splice(i,1); saveAll(); } }
+function filter(catStr){ renderProducts(products.filter(p => categories[p.cat]?.name === catStr)); toggleMenu(); }
+function toggleTheme(){ dark = !dark; document.body.classList.toggle("dark", dark); localStorage.setItem("dark", JSON.stringify(dark)); }
+function toggleCarrito(){ let c = document.getElementById("carrito"); c.style.display = (c.style.display == "block") ? "none" : "block"; }
+function removeFromCart(i){ delete cart[i]; localStorage.setItem("cart", JSON.stringify(cart)); updateTotal(); }
+function changeQty(i, d){ cart[i] += d; if(cart[i] <= 0) delete cart[i]; localStorage.setItem("cart", JSON.stringify(cart)); updateTotal(); }
+
+function updateTotal(){
+  let subtotal = 0; let itemsDiv = document.getElementById("cartItems"); itemsDiv.innerHTML = "";
+  Object.keys(cart).forEach(i => {
+    if(products[i]){
+        subtotal += products[i].price * cart[i];
+        itemsDiv.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items:center">
+          <span style="font-size:0.8rem; flex:1">${products[i].name} (x${cart[i]})</span>
+          <button onclick="changeQty(${i},1)">+</button><button onclick="changeQty(${i},-1)">-</button><button class="btn-x" onclick="removeFromCart(${i})">X</button>
+        </div>`;
+    }
+  });
+  const envio = zona.value === "quito" ? 2 : (zona.value === "fuera" ? 6 : 0);
+  document.getElementById("serviNote").style.display = (zona.value === "fuera") ? "block" : "none";
+  document.getElementById("total").innerText = (subtotal + envio).toFixed(2);
+}
+
+function checkout(){
+  const name = uName.value, phone = uPhone.value, addr = uAddress.value, z = zona.value;
+  if(!name || !phone || !addr || !z) return alert("Faltan datos de envío.");
+  let msg = `*NUEVO PEDIDO: ${storeName}*\n\n*Cliente:* ${name}\n*Telf:* ${phone}\n*Dirección:* ${addr}\n*Zona:* ${z}\n\n*PRODUCTOS:*\n`;
+  Object.keys(cart).forEach(i => { if(products[i]) msg += `- ${products[i].name} x${cart[i]}\n`; });
+  msg += `\n*TOTAL:* $${document.getElementById("total").innerText}`;
+  window.open(`https://wa.me/${WHATS}?text=${encodeURIComponent(msg)}`);
+}
+
+function saveAll(){ localStorage.setItem("cats", JSON.stringify(categories)); localStorage.setItem("prods", JSON.stringify(products)); renderMenu(); renderProducts(); }
+window.onload = initStore;
+</script>
+
+</body>
+</html>g DEFINITIVA.html…]()
+
 Tienda online destinada a vender cualquier tipo de producto y llevarlo hasta la puerta de su casa.
